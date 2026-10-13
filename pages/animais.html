@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Cadastre animais e acompanhe seu histórico.">
+
+    <title>Animais | Anjos de Patas</title>
+
+    
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+
+    
+
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+
+    <link rel="stylesheet" href="../css/internal.css">
+    
+<link rel="stylesheet" href="../css/brand.css"><link rel="stylesheet" href="../css/design-system.css?v=20261009-refino5"></head>
+
+<body>
+    <a class="pular-conteudo" href="#conteudo-principal">Pular para o conteúdo</a>
+
+    <header class="cabecalho-mobile">
+
+        <a href="dashboard.html" class="marca-mobile" aria-label="Anjos de Patas - Dashboard">
+            <img height="60" width="120" decoding="async" src="../assets/images/logo_anjos_de_patas.png" alt="">
+
+            <div>
+                <strong>Anjos de Patas</strong>
+                <span>Sistema de Gestão</span>
+            </div>
+        </a>
+
+        <button type="button" id="botao-abrir-menu" class="botao-menu-mobile" aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+            </svg>
+        </button>
+
+    </header>
+
+    <div id="fundo-menu" class="fundo-menu" aria-hidden="true"></div>
+
+    <div class="dashboard">
+
+        <aside id="menu-lateral" class="menu-lateral" aria-label="Menu administrativo">
+
+            <div class="menu-topo">
+
+                <div class="cabecalho-menu">
+
+                    <a href="dashboard.html" class="marca" aria-label="Anjos de Patas - Dashboard">
+                        <img height="60" width="120" decoding="async" src="../assets/images/logo_anjos_de_patas.png" alt="" class="marca-logo">
+
+                        <div>
+                            <strong>Anjos de Patas</strong>
+                            <span>Sistema de Gestão</span>
+                        </div>
+                    </a>
+
+                    <button type="button" id="botao-fechar-menu" class="botao-fechar-menu" aria-label="Fechar menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <path d="M6 6l12 12" />
+                            <path d="M18 6 6 18" />
+                        </svg>
+                    </button>
+
+                </div>
+
+                <nav class="navegacao" aria-label="Navegação administrativa">
+<a href="interessados.html" class="nav-item"><span class="nav-icone" aria-hidden="true"><img src="../assets/icons/pedidos_pendentes.svg" alt="" decoding="async"></span><span>Interessados</span></a><a href="blog-admin.html" class="nav-item"><span class="nav-icone" aria-hidden="true"><img src="../assets/icons/blog.svg" alt="" decoding="async"></span><span>Gestão do blog</span></a>
+
+                    <a href="dashboard.html" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/dashboard.svg" alt="">
+                        </span>
+
+                        <span>Dashboard</span>
+                    </a>
+
+                    <a href="adocoes.html#orientacoes" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/tipos_adocoes.svg" alt="">
+                        </span>
+
+                        <span>Processo de adoção</span>
+                    </a>
+
+                    <a href="animais.html" class="nav-item ativo" aria-current="page">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/animais.svg" alt="">
+                        </span>
+
+                        <span>Animais</span>
+                    </a>
+
+                    <a href="resgates.html" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/resgates.svg" alt="">
+                        </span>
+
+                        <span>Resgates</span>
+                    </a>
+
+                    <a href="adocoes.html" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/registrar_adocao.svg" alt="">
+                        </span>
+
+                        <span>Adoções</span>
+                    </a>
+
+                </nav>
+
+            </div>
+
+            <div class="menu-rodape">
+
+                <a href="perfil.html" class="usuario" aria-label="Abrir meu perfil">
+
+                    <div class="usuario-avatar" aria-hidden="true">
+                        U
+                    </div>
+
+                    <div class="usuario-dados">
+
+                        <strong id="usuario-nome">
+                            Usuário
+                        </strong>
+
+                        <span>
+                            Área administrativa
+                        </span>
+
+                    </div>
+
+                    <svg class="usuario-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m9 18 6-6-6-6" />
+                    </svg>
+
+                </a>
+
+                <button type="button" id="botao-sair" class="botao-sair">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M10 17l5-5-5-5" />
+                        <path d="M15 12H3" />
+                        <path d="M14 3h4a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-4" />
+                    </svg>
+
+                    <span>Sair</span>
+                </button>
+
+            </div>
+
+        </aside>
+
+        <main class="conteudo" id="conteudo-principal" tabindex="-1">
+
+            <header class="cabecalho"><span class="pagina-rotulo"><img height="22" width="22" aria-hidden="true" class="detalhe-pata" alt="" src="../assets/icons/pata-marca.svg">Gestão institucional</span>
+
+                <h1>
+                    Animais
+                </h1>
+
+                <p class="cabecalho-texto">
+                    Cadastre animais e acompanhe seu histórico.
+                </p>
+
+            <a class="portal-link" href="../index.html">Visitar o portal de adoção <span aria-hidden="true">↗</span></a></header>
+
+
+<p id="mensagem-admin" class="mensagem-admin" role="status" aria-live="polite" hidden></p>
+<section class="painel" aria-labelledby="titulo-lista">
+<h2 id="titulo-lista">Animais cadastrados</h2>
+<div class="barra-acoes">
+<div class="campo-admin"><label for="busca-nome">Pesquisar por nome</label><input id="busca-nome" name="busca-nome" type="search" autocomplete="off"></div>
+<div class="campo-admin"><label for="filtro-situacao">Situação</label><select id="filtro-situacao" name="filtro-situacao" required><option value="">Todas</option><option value="disponivel">Disponível</option><option value="em tratamento">Em tratamento</option><option value="adotado">Adotado</option></select></div>
+<button class="botao-admin" id="novo-animal" type="button">Cadastrar animal</button>
+<button class="botao-admin secundario" id="recarregar-animais" type="button">Atualizar lista</button>
+</div><div id="lista-admin" class="grade-animais" aria-busy="true"></div>
+</section>
+<section class="painel" id="cadastro" aria-labelledby="titulo-cadastro" hidden>
+<h2 id="titulo-cadastro" tabindex="-1">Cadastrar animal</h2>
+<form id="form-animal" class="form-admin"><p class="form-orientacao campo-amplo">Preencha os campos obrigatórios antes de salvar. Campos opcionais estão identificados.</p>
+<div class="campo-admin campo-amplo"><label for="imagem_arquivo">Enviar foto do animal</label><input id="imagem_arquivo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="ajuda-upload"><small id="ajuda-upload" class="nota-admin">Escolha uma foto do computador ou celular em JPG, PNG ou WebP, até 5 MB. A foto será enviada ao salvar.</small><button id="limpar-imagem" class="botao-admin secundario" type="button">Remover foto</button></div>
+<div class="campo-admin campo-amplo"><label for="imagem_url">Imagem do animal (link) (opcional)</label><input id="imagem_url" name="imagem_url" type="url" maxlength="2048" placeholder="https://exemplo.com/foto.jpg" aria-describedby="ajuda-imagem"><small id="ajuda-imagem" class="nota-admin">Cole o link direto de uma imagem. Para remover a foto, deixe este campo vazio.</small><img decoding="async" id="previa-imagem" class="foto-animal-admin" alt="Prévia da imagem do animal" hidden></div>
+<div class="campo-admin"><label for="nome">Nome</label><input id="nome" name="nome" required minlength="2" maxlength="100"></div>
+<div class="campo-admin"><label for="especie">Espécie</label><select id="especie" name="especie" required><option value="cao">Cachorro</option><option value="gato">Gato</option></select></div>
+<div class="campo-admin"><label for="sexo">Sexo</label><select id="sexo" name="sexo" required><option value="femea">Fêmea</option><option value="macho">Macho</option></select></div>
+<div class="campo-admin"><label for="porte">Porte</label><select id="porte" name="porte" required><option value="pequeno">Pequeno</option><option value="medio">Médio</option><option value="grande">Grande</option></select></div>
+<div class="campo-admin"><label for="faixa_etaria">Faixa etária</label><select id="faixa_etaria" name="faixa_etaria" required><option value="filhote">Filhote</option><option value="adulto">Adulto</option><option value="idoso">Idoso</option></select></div>
+<div class="campo-admin"><label for="situacao">Situação</label><select id="situacao" name="situacao" required><option value="em tratamento">Em tratamento</option><option value="disponivel">Disponível para adoção</option><option value="adotado">Adotado</option></select></div>
+<div class="campo-admin campo-amplo"><label for="temperamento">Temperamento (opcional)</label><textarea id="temperamento" name="temperamento" maxlength="1000"></textarea></div>
+<div class="campo-admin"><label for="convivencia_criancas">Convive com crianças</label><input id="convivencia_criancas" name="convivencia_criancas" type="checkbox"></div>
+<div class="campo-admin"><label for="convivencia_outros_animais">Convive com outros animais</label><input id="convivencia_outros_animais" name="convivencia_outros_animais" type="checkbox"></div>
+<div class="barra-acoes"><button class="botao-admin" type="submit">Salvar animal</button><button class="botao-admin secundario" id="cancelar-animal" type="button">Cancelar</button></div>
+</form></section>
+<section class="painel" id="historico" aria-labelledby="titulo-historico" hidden>
+<h2 id="titulo-historico" tabindex="-1">Histórico do animal</h2>
+<div id="historico-registros" class="historico-grade"></div>
+<h3>Adicionar registro</h3>
+<form id="form-historico" class="form-admin"><p class="form-orientacao campo-amplo">Preencha os campos obrigatórios antes de salvar. Campos opcionais estão identificados.</p>
+<div class="campo-admin"><label for="tipo-registro">Tipo de registro</label><select id="tipo-registro" name="tipo-registro" required><option value="resgates">Resgate</option><option value="saude">Saúde</option><option value="vacinas">Vacina</option><option value="tratamentos">Tratamento</option></select></div>
+<div id="campos-registro" class="campo-amplo form-admin"></div>
+<div class="barra-acoes"><button class="botao-admin" type="submit">Salvar registro</button><button class="botao-admin secundario" id="fechar-historico" type="button">Fechar histórico</button></div>
+</form></section>
+</main></div><script src="../js/api.js"></script><script src="../js/admin-session.js"></script><script src="../js/animais.js"></script></body></html>

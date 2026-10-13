@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Acompanhe interessados e registre adoções.">
+
+    <title>Adoções | Anjos de Patas</title>
+
+    
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+
+    
+
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+
+    <link rel="stylesheet" href="../css/internal.css">
+    
+<link rel="stylesheet" href="../css/brand.css"><link rel="stylesheet" href="../css/design-system.css?v=20261009-refino5"></head>
+
+<body>
+    <a class="pular-conteudo" href="#conteudo-principal">Pular para o conteúdo</a>
+
+    <header class="cabecalho-mobile">
+
+        <a href="dashboard.html" class="marca-mobile" aria-label="Anjos de Patas - Dashboard">
+            <img height="60" width="120" decoding="async" src="../assets/images/logo_anjos_de_patas.png" alt="">
+
+            <div>
+                <strong>Anjos de Patas</strong>
+                <span>Sistema de Gestão</span>
+            </div>
+        </a>
+
+        <button type="button" id="botao-abrir-menu" class="botao-menu-mobile" aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+            </svg>
+        </button>
+
+    </header>
+
+    <div id="fundo-menu" class="fundo-menu" aria-hidden="true"></div>
+
+    <div class="dashboard">
+
+        <aside id="menu-lateral" class="menu-lateral" aria-label="Menu administrativo">
+
+            <div class="menu-topo">
+
+                <div class="cabecalho-menu">
+
+                    <a href="dashboard.html" class="marca" aria-label="Anjos de Patas - Dashboard">
+                        <img height="60" width="120" decoding="async" src="../assets/images/logo_anjos_de_patas.png" alt="" class="marca-logo">
+
+                        <div>
+                            <strong>Anjos de Patas</strong>
+                            <span>Sistema de Gestão</span>
+                        </div>
+                    </a>
+
+                    <button type="button" id="botao-fechar-menu" class="botao-fechar-menu" aria-label="Fechar menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <path d="M6 6l12 12" />
+                            <path d="M18 6 6 18" />
+                        </svg>
+                    </button>
+
+                </div>
+
+                <nav class="navegacao" aria-label="Navegação administrativa">
+<a href="interessados.html" class="nav-item"><span class="nav-icone" aria-hidden="true"><img src="../assets/icons/pedidos_pendentes.svg" alt="" decoding="async"></span><span>Interessados</span></a><a href="blog-admin.html" class="nav-item"><span class="nav-icone" aria-hidden="true"><img src="../assets/icons/blog.svg" alt="" decoding="async"></span><span>Gestão do blog</span></a>
+
+                    <a href="dashboard.html" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/dashboard.svg" alt="">
+                        </span>
+
+                        <span>Dashboard</span>
+                    </a>
+
+                    <a href="adocoes.html#orientacoes" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/tipos_adocoes.svg" alt="">
+                        </span>
+
+                        <span>Processo de adoção</span>
+                    </a>
+
+                    <a href="animais.html" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/animais.svg" alt="">
+                        </span>
+
+                        <span>Animais</span>
+                    </a>
+
+                    <a href="resgates.html" class="nav-item">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/resgates.svg" alt="">
+                        </span>
+
+                        <span>Resgates</span>
+                    </a>
+
+                    <a href="adocoes.html" class="nav-item ativo" aria-current="page">
+                        <span class="nav-icone" aria-hidden="true">
+                            <img decoding="async" src="../assets/icons/registrar_adocao.svg" alt="">
+                        </span>
+
+                        <span>Adoções</span>
+                    </a>
+
+                </nav>
+
+            </div>
+
+            <div class="menu-rodape">
+
+                <a href="perfil.html" class="usuario" aria-label="Abrir meu perfil">
+
+                    <div class="usuario-avatar" aria-hidden="true">
+                        U
+                    </div>
+
+                    <div class="usuario-dados">
+
+                        <strong id="usuario-nome">
+                            Usuário
+                        </strong>
+
+                        <span>
+                            Área administrativa
+                        </span>
+
+                    </div>
+
+                    <svg class="usuario-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="m9 18 6-6-6-6" />
+                    </svg>
+
+                </a>
+
+                <button type="button" id="botao-sair" class="botao-sair">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M10 17l5-5-5-5" />
+                        <path d="M15 12H3" />
+                        <path d="M14 3h4a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3h-4" />
+                    </svg>
+
+                    <span>Sair</span>
+                </button>
+
+            </div>
+
+        </aside>
+
+        <main class="conteudo" id="conteudo-principal" tabindex="-1">
+
+            <header class="cabecalho"><span class="pagina-rotulo"><img height="22" width="22" aria-hidden="true" class="detalhe-pata" alt="" src="../assets/icons/pata-marca.svg">Gestão institucional</span>
+
+                <h1>
+                    Adoções
+                </h1>
+
+                <p class="cabecalho-texto">
+                    Acompanhe interessados e registre adoções.
+                </p>
+
+            <a class="portal-link" href="../index.html">Visitar o portal de adoção <span aria-hidden="true">↗</span></a></header>
+
+
+<p id="mensagem-admin" class="mensagem-admin" role="status" aria-live="polite" hidden></p>
+<section class="painel" id="orientacoes"><h2>Processo de adoção</h2>
+<p>A equipe consulta os interessados, realiza a triagem e registra a adoção após sua avaliação. O registro atualiza a situação do animal para adotado e mantém o histórico.</p>
+</section>
+<section class="painel"><h2>Registrar adoção</h2>
+<form id="form-adocao" class="form-admin"><p class="form-orientacao campo-amplo">Preencha os campos obrigatórios antes de salvar. Campos opcionais estão identificados.</p>
+<div class="campo-admin"><label for="animal_id">Animal disponível</label><select id="animal_id" name="animal_id" required><option value="">Selecione um animal</option></select></div>
+<div class="campo-admin"><label for="adotante_id">Adotante aprovado</label><select id="adotante_id" name="adotante_id" required><option value="">Selecione um adotante</option></select></div>
+<div id="dados-adotante-adocao" class="campo-amplo" hidden aria-live="polite">
+<p class="nota-admin">Dados preenchidos a partir do cadastro do adotante.</p>
+<div class="campo-admin"><label for="adocao-nome">Nome completo</label><input id="adocao-nome" readonly></div>
+<div class="campo-admin"><label for="adocao-email">E-mail</label><input id="adocao-email" readonly></div>
+<div class="campo-admin"><label for="adocao-telefone">Telefone com DDD</label><input id="adocao-telefone" readonly></div>
+<div class="campo-admin"><label for="adocao-cidade">Cidade</label><input id="adocao-cidade" readonly></div>
+<div class="campo-admin"><label for="adocao-estado">Estado</label><input id="adocao-estado" readonly></div>
+<div class="campo-admin"><label for="adocao-mensagem">Rotina e lar oferecido</label><textarea id="adocao-mensagem" readonly></textarea></div>
+</div>
+<div class="campo-admin"><label for="data_adocao">Data da adoção</label><input id="data_adocao" name="data_adocao" type="date" required></div>
+<div class="campo-admin"><label for="observacoes">Observações (opcional)</label><textarea id="observacoes" name="observacoes" maxlength="2000"></textarea></div>
+<p class="nota-admin campo-amplo">Registre somente após a avaliação da equipe. A confirmação retira o animal do catálogo público.</p>
+<div class="barra-acoes"><button class="botao-admin" type="submit">Registrar adoção</button><button class="botao-admin secundario" type="button" id="recarregar-adocoes">Atualizar dados</button></div>
+</form></section>
+<section class="painel"><h2>Adotantes e triagem</h2><div id="lista-adotantes"></div></section>
+<section class="painel"><h2>Cadastrar interessado</h2><form id="form-adotante" class="form-admin"><p class="form-orientacao campo-amplo">Preencha os campos obrigatórios antes de salvar. Campos opcionais estão identificados.</p>
+<div class="campo-admin"><label for="nome-adotante">Nome</label><input id="nome-adotante" name="nome" required minlength="3" maxlength="100"></div>
+<div class="campo-admin"><label for="email-adotante">E-mail</label><input id="email-adotante" name="email" type="email" required autocomplete="email"></div>
+<div class="campo-admin"><label for="telefone-adotante">Telefone com DDD</label><input aria-describedby="ajuda-telefone-adotante" placeholder="(99) 99999-9999" autocomplete="tel-national" maxlength="15" data-telefone="" id="telefone-adotante" name="telefone" type="tel" required pattern="\([0-9]{2}\) [0-9]{4,5}-[0-9]{4}" inputmode="tel" title="Informe o DDD e um telefone com 10 ou 11 números."><small class="nota-admin" id="ajuda-telefone-adotante">Fixo: (99) 3333-4444. Celular: (99) 99999-9999.</small></div>
+<div class="campo-admin"><label for="endereco-adotante">Endereço (opcional)</label><input id="endereco-adotante" name="endereco" autocomplete="street-address"></div>
+<div class="barra-acoes"><button class="botao-admin" type="submit">Cadastrar interessado</button></div>
+</form></section>
+<section class="painel"><h2>Adoções registradas</h2><div id="lista-adocoes"></div></section>
+</main></div><script src="../js/telefone.js"></script><script src="../js/api.js"></script><script src="../js/admin-session.js"></script><script src="../js/adocoes.js"></script></body></html>

@@ -1,0 +1,452 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { parseHTML } from 'linkedom';
+
+function ambiente(pagina, solicitar) {
+    const { document, window } = parseHTML(fs.readFileSync(pagina, 'utf8'));
+    function configurarSelect(select) {
+        Object.defineProperty(select, 'value', {
+            configurable: true,
+            get() { return this.querySelector('option[selected]')?.value ?? this.querySelector('option')?.value ?? ''; },
+            set(valor) { for (const option of this.querySelectorAll('option')) option.selected = option.value === String(valor); }
+        });
+    }
+    for (const select of document.querySelectorAll('select')) configurarSelect(select);
+    const criar=document.createElement.bind(document);
+    document.createElement=(tag,...args)=>{const e=criar(tag,...args);if(tag==='select')configurarSelect(e);if(tag==='form')e.reportValidity=()=>true;return e;};
+    const sessao = new Map([['anjos_token', 'token-de-teste']]);
+    const context = vm.createContext({
+        window: {
+            AnjosAPI: { base: 'http://localhost:3000', solicitar },
+            location: { hash: '', replace() {} },
+            matchMedia: () => ({ matches: true }),
+            addEventListener() {}, scrollY: 0
+        },
+        document, console, Headers,
+        URL: class extends URL { static createObjectURL(){return 'blob:foto-teste';} static revokeObjectURL(){} }, URLSearchParams, clearTimeout() {},
+        sessionStorage: { getItem: (chave) => sessao.get(chave), removeItem: (chave) => sessao.delete(chave) },
+        requestAnimationFrame: (callback) => callback(),
+        setTimeout: (callback) => { callback(); return 0; },
+        FormData: class {
+            constructor(form) { this.form = form; }
+            *[Symbol.iterator]() {
+                for (const el of this.form.querySelectorAll('input,select,textarea')) {
+                    if (el.name && !el.disabled && (el.type !== 'checkbox' || el.checked)) yield [el.name, el.value];
+                }
+            }
+        }
+    });
+    for (const form of document.querySelectorAll('form')) {
+        const controles = [...form.querySelectorAll('input,select,textarea,button')];
+        for (const el of controles) if (el.name) controles[el.name] = el;
+        form.elements = controles;
+        form.reportValidity = () => true;
+        form.reset = () => {};
+    }
+    for (const el of document.querySelectorAll('*')) { el.focus = () => {}; el.scrollIntoView = () => {}; }
+    return {
+        document, window, context,
+        executar(arquivo) { vm.runInContext(fs.readFileSync(arquivo,'utf8'), context, { filename: arquivo }); }
+    };
+}
+const aguardar = () => new Promise((resolve) => setImmediate(resolve));
+
+test('destaque da home mantém apresentação editorial sem inventar relato não autorizado', async () => {
+    const env=ambiente('index.html',async()=>({}));
+    env.context.fetch=async()=>({ok:true,json:async()=>({historias:[{titulo:'Não publicar',relato:'Relato privado',autorizada:false,publicada:true}]})});
+    env.executar('js/home-editorial.js');await aguardar();
+    assert.match(env.document.querySelector('#titulo-por-tras').textContent,/Por trás de/);
+    assert.equal(env.document.querySelector('#legenda-por-tras').textContent,'Imagem ilustrativa');
+    assert.equal(env.document.querySelector('#relato-por-tras').textContent.includes('Relato privado'),false);
+});
+
+test('destaque da home usa somente relato autorizado e renderiza seu conteúdo como texto', async () => {
+    const env=ambiente('index.html',async()=>({}));
+    env.context.fetch=async()=>({ok:true,json:async()=>({historias:[{titulo:'<img src=x>',animal:'Mel',relato:'Uma história confirmada pela equipe.',foto:'../assets/images/companheiros-hero.jpg',foto_alt:'Registro autorizado',autorizada:true,publicada:true}]})});
+    env.executar('js/home-editorial.js');await aguardar();
+    assert.equal(env.document.querySelector('#titulo-por-tras img'),null);
+    assert.equal(env.document.querySelector('#titulo-por-tras').textContent,'<img src=x>');
+    assert.equal(env.document.querySelector('#foto-por-tras').getAttribute('src'),'assets/images/companheiros-hero.jpg');
+    assert.equal(env.document.querySelector('#link-por-tras').getAttribute('href'),'pages/historias.html');
+    env.document.querySelector('#foto-por-tras').dispatchEvent(new env.window.Event('error'));
+    assert.equal(env.document.querySelector('#legenda-por-tras').textContent,'Imagem ilustrativa');
+});
+
+test('blog consulta filtros na API, informa vazio e limpa filtros', async () => {
+    const artigos=[{id:1,titulo:'Planejar o lar',resumo:'Organize a rotina',categoria:'Planejamento'}, {id:2,titulo:'Manifestação de interesse',resumo:'Entenda as etapas',categoria:'Adoção responsável'}, {id:3,titulo:'Oferecer apoio',resumo:'Participe da ONG',categoria:'Participação'}];
+    const env = ambiente('pages/blog.html', async url => {
+        const query=new URL(url,'http://localhost').searchParams;
+        const normalizar=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+        const encontrados=artigos.filter(a=>(!query.get('categoria')||a.categoria===query.get('categoria'))&&normalizar(a.titulo+' '+a.resumo).includes(normalizar(query.get('busca')||'')));
+        return {artigos:encontrados,total:encontrados.length};
+    });
+    Object.defineProperty(env.document.querySelector('#categoria-blog'), 'value', { configurable: true, writable: true, value: '' });
+    env.executar('js/blog.js');
+    await aguardar();
+    const busca = env.document.querySelector('#busca-blog');
+    const categoria = env.document.querySelector('#categoria-blog');
+    const visiveis = () => [...env.document.querySelectorAll('.blog-card')].filter(c => !c.hidden);
+    assert.equal(visiveis().length, 3);
+    busca.value = 'manifestacao';
+    busca.dispatchEvent(new env.window.Event('input'));
+    await aguardar();
+    assert.equal(visiveis().length, 1);
+    categoria.value = 'Planejamento';
+    categoria.dispatchEvent(new env.window.Event('change'));
+    await aguardar();
+    assert.equal(visiveis().length, 0);
+    assert.equal(env.document.querySelector('#blog-vazio').hidden, false);
+    env.document.querySelector('#limpar-blog').click();
+    await aguardar();
+    assert.equal(visiveis().length, 3);
+    assert.equal(env.document.querySelector('#blog-vazio').hidden, true);
+});
+
+test('interessados salvam contato autenticado com versão e preservam nota em falha', async () => {
+    let falhar=true,envio;
+    const pessoa={id:7,nome:'Pessoa de teste',email:'pessoa@example.com',telefone:'99912345678',etapa:'triagem',versao:3,criado_em:'2026-10-09'};
+    const env=ambiente('pages/interessados.html',async(url,opcoes={})=>{
+        if(opcoes.method==='POST'){envio={url,opcoes};if(falhar)throw new Error('Falha ao salvar');return {sucesso:true};}
+        if(url.includes('/historico'))return {eventos:[{tipo:'nota',nota:'<img src=x>',criado_em:'2026-10-09'}]};
+        return {interessados:[pessoa],total:1};
+    });
+    env.executar('js/telefone.js');env.executar('js/interessados.js');await aguardar();
+    for(const id of ['tipo-7','etapa-7'])Object.defineProperty(env.document.getElementById(id),'value',{writable:true,configurable:true,value:''});
+    env.document.querySelector('#nota-7').value='Ligação realizada';env.document.querySelector('#tipo-7').value='contato';
+    env.document.querySelector('#etapa-7').value='entrevista';
+    env.document.querySelector('details form').dispatchEvent(new env.window.Event('submit',{cancelable:true}));await aguardar();
+    assert.equal(envio.opcoes.autenticado,true);assert.equal(envio.url,'/api/admin/interessados/7/acompanhamento');
+    assert.deepEqual(JSON.parse(envio.opcoes.body),{etapa:'entrevista',tipo:'contato',nota:'Ligação realizada',versao:3});
+    assert.equal(env.document.querySelector('#nota-7').value,'Ligação realizada');
+    assert.match(env.document.querySelector('#mensagem-admin').textContent,/Falha/);
+    const historico=[...env.document.querySelectorAll('button')].find(b=>b.textContent==='Consultar histórico');historico.click();await aguardar();
+    assert.equal(env.document.querySelector('details img'),null);assert.match(env.document.querySelector('.historico-etapas').textContent,/<img src=x>/);
+    falhar=false;env.document.querySelector('details form').dispatchEvent(new env.window.Event('submit',{cancelable:true}));await aguardar();
+    assert.match(env.document.querySelector('#mensagem-admin').textContent,/salvo/);
+});
+
+test('editor do blog pré-visualiza texto seguro e preserva o rascunho quando salvar falha',async()=>{
+    let envio;
+    const env=ambiente('pages/blog-admin.html',async(url,opcoes={})=>{if(opcoes.method==='POST'){envio={url,opcoes};throw new Error('Falha ao publicar');}return {artigos:[],total:0};});
+    env.executar('js/artigo-texto.js');env.executar('js/blog-admin.js');await aguardar();
+    env.document.querySelector('#titulo-artigo').value='Um artigo de teste';env.document.querySelector('#resumo-artigo').value='Resumo do artigo para teste';
+    const conteudo='## Cuidados\n\n<img src=x onerror=alert(1)> é apenas texto neste artigo.';
+    env.document.querySelector('#conteudo-artigo').value=conteudo;
+    env.document.querySelector('#prever-artigo').click();assert.equal(env.document.querySelector('#previa-artigo img'),null);assert.match(env.document.querySelector('#previa-artigo').textContent,/<img src=x/);
+    env.document.querySelector('#form-artigo').dispatchEvent(new env.window.Event('submit',{cancelable:true}));await aguardar();
+    assert.equal(envio.opcoes.autenticado,true);assert.equal(JSON.parse(envio.opcoes.body).conteudo,conteudo);
+    assert.equal(env.document.querySelector('#conteudo-artigo').value,conteudo);assert.match(env.document.querySelector('#mensagem-admin').textContent,/Falha/);
+    assert.equal(env.document.querySelector('#titulo-artigo').disabled,false);
+});
+
+test('recuperação confirma senha antes de enviar e não grava código ou senha na sessão',async()=>{
+    let envios=0,ultimo;
+    const env=ambiente('pages/recuperar-senha.html',async(url,opcoes)=>{envios++;ultimo={url,opcoes};return {mensagem:'Operação concluída'};});
+    env.executar('js/recuperar-senha.js');
+    env.document.querySelector('#email-recuperar').value='pessoa@example.com';
+    env.document.querySelector('#form-recuperar').dispatchEvent(new env.window.Event('submit',{cancelable:true}));await aguardar();
+    assert.equal(env.document.querySelector('#form-recuperar').hidden,true);assert.equal(env.document.querySelector('#form-redefinir').hidden,false);
+    env.document.querySelector('#codigo-redefinir').value='123456';env.document.querySelector('#senha-redefinir').value='senha-nova';env.document.querySelector('#confirmar-redefinir').value='diferente';
+    env.document.querySelector('#form-redefinir').dispatchEvent(new env.window.Event('submit',{cancelable:true}));await aguardar();assert.equal(envios,1);
+    env.document.querySelector('#confirmar-redefinir').value='senha-nova';env.document.querySelector('#form-redefinir').dispatchEvent(new env.window.Event('submit',{cancelable:true}));await aguardar();
+    assert.equal(envios,2);assert.equal(ultimo.url,'/api/redefinir-senha');assert.equal(env.document.querySelector('#form-redefinir').hidden,true);
+    assert.equal(env.context.sessionStorage.getItem('anjos_token'),undefined);
+});
+
+test('adotante vê etapa atual e histórico real, sem marcar entrevistas ou conclusão fictícias',async()=>{
+    const env=ambiente('pages/area-adotante.html',async()=>({conta:{nome:'Pessoa de teste',email:'pessoa@example.com'},interesse:{animal_nome:'Mel',etapa:'triagem',eventos:[{etapa:'recebido',criado_em:'2026-10-09'}]}}));
+    env.context.sessionStorage.getItem=chave=>chave==='anjos_adotante_token'?'token-adotante':undefined;
+    env.executar('js/conta-adotante.js');await aguardar();
+    assert.equal(env.document.querySelectorAll('#etapas-conta li').length,5);
+    assert.match(env.document.querySelector('[aria-current=step]').textContent,/Em triagem/);
+    assert.match(env.document.querySelector('#etapas-conta li:last-child').textContent,/Sem registro/);
+    assert.equal(env.document.querySelectorAll('#historico-conta li').length,1);
+    assert.equal(env.document.querySelector('#dados-conta').hidden,false);
+});
+
+test('página de resgates registra no animal selecionado, pesquisa e preserva o formulário em caso de falha', async () => {
+    const chamadas = [];
+    let falhar = false;
+    const env = ambiente('pages/resgates.html', async (url, opcoes = {}) => {
+        chamadas.push({ url, opcoes });
+        if (opcoes.method === 'POST') {
+            if (falhar) throw new Error('Falha ao salvar resgate');
+            return { sucesso: true };
+        }
+        if (url === '/api/admin/animais') return { animais: [{ id: 42, nome: 'Mel' }] };
+        return { resgates: [{ animal_id: 42, data_resgate: '2026-01-01', local_resgate: 'Centro', motivo: '<img src=x>' }] };
+    });
+    env.executar('js/resgates.js');
+    await aguardar();
+    assert.equal(env.document.querySelector('#salvar-resgate').disabled, false);
+    assert.equal(env.document.querySelector('#lista-resgates h3').textContent, 'Mel');
+    assert.equal(env.document.querySelector('#lista-resgates img'), null);
+    const busca = env.document.querySelector('#busca-resgate');
+    busca.value = 'inexistente';
+    busca.dispatchEvent(new env.window.Event('input'));
+    assert.equal(env.document.querySelector('#lista-resgates article'), null);
+    const form = env.document.querySelector('#form-resgate');
+    form.elements.animal_id.value = '42';
+    form.elements.data_resgate.value = '2026-01-01';
+    form.elements.local_resgate.value = ' Centro ';
+    form.elements.motivo.value = 'Abandono';
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    const post = chamadas.find(c => c.opcoes.method === 'POST');
+    assert.equal(post.url, '/api/animais/42/resgates');
+    assert.equal(post.opcoes.autenticado, true);
+    assert.equal(JSON.parse(post.opcoes.body).local_resgate, 'Centro');
+    assert.equal(JSON.parse(post.opcoes.body).animal_id, undefined);
+    falhar = true;
+    form.elements.animal_id.value = '42';
+    form.elements.local_resgate.value = 'Bairro Norte';
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    assert.equal(form.elements.local_resgate.value, 'Bairro Norte');
+    assert.equal(env.document.querySelector('#mensagem-admin').textContent, 'Falha ao salvar resgate');
+    assert.equal(env.document.querySelector('#salvar-resgate').disabled, false);
+});
+
+test('falha de consulta na página de resgates bloqueia registro e oferece atualização', async () => {
+    const env = ambiente('pages/resgates.html', async () => { throw new Error('Sem conexão'); });
+    env.executar('js/resgates.js');
+    await aguardar();
+    assert.equal(env.document.querySelector('#salvar-resgate').disabled, true);
+    assert.match(env.document.querySelector('#lista-resgates').textContent, /Atualizar dados/);
+});
+
+test('foto local é enviada antes de salvar e falha de upload mantém formulário aberto', async () => {
+    const chamadas = [];
+    let falhar = true;
+    const env = ambiente('pages/animais.html', async (caminho, opcoes) => {
+        chamadas.push({ caminho, opcoes });
+        if (caminho === '/api/animais/imagem') {
+            if (falhar) throw new Error('Falha ao enviar foto');
+            return { imagem_url: 'https://exemplo.com/upload.jpg' };
+        }
+        return { animais: [] };
+    });
+    env.executar('js/animais.js');
+    await aguardar();
+    env.document.querySelector('#novo-animal').click();
+    const arquivo = { type: 'image/jpeg', size: 200 };
+    const input = env.document.querySelector('#imagem_arquivo');
+    input.files = [arquivo];
+    input.dispatchEvent(new env.window.Event('change'));
+    assert.equal(env.document.querySelector('#previa-imagem').getAttribute('src'), 'blob:foto-teste');
+    const form = env.document.querySelector('#form-animal');
+    form.elements.nome.value = 'Mel';
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    assert.equal(env.document.querySelector('#cadastro').hidden, false);
+    assert.equal(chamadas.some((c) => c.caminho === '/api/animais'), false);
+    falhar = false;
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    const upload = chamadas.find((c) => c.caminho === '/api/animais/imagem');
+    assert.equal(upload.opcoes.body, arquivo);
+    assert.equal(upload.opcoes.headers['Content-Type'], 'image/jpeg');
+    const cadastro = chamadas.find((c) => c.caminho === '/api/animais');
+    assert.equal(JSON.parse(cadastro.opcoes.body).imagem_url, 'https://exemplo.com/upload.jpg');
+});
+
+test('catálogo usa API, omite adotados, filtra e trata nomes como texto', async () => {
+    const env = ambiente('index.html', async () => ({ sucesso: true, animais: [
+        { id: 1, nome: '<img src=x onerror=alert(1)>', especie: 'cao', sexo: 'macho', porte: 'medio', situacao: 'disponivel' },
+        { id: 2, nome: 'Mel', especie: 'gato', sexo: 'femea', porte: 'pequeno', situacao: 'disponivel' },
+        { id: 3, nome: 'Já adotado', especie: 'cao', sexo: 'macho', situacao: 'adotado' }
+    ] }));
+    env.executar('js/main.js');
+    await aguardar();
+    assert.equal(env.document.querySelectorAll('.lista-animais .card-animal').length, 2);
+    assert.equal(env.document.querySelector('.lista-animais h3').textContent, '<img src=x onerror=alert(1)>');
+    assert.equal(env.document.querySelector('.lista-animais h3 img'), null);
+    env.document.querySelector('[data-tipo="especie"][data-valor="gato"]').click();
+    const visiveis = [...env.document.querySelectorAll('.lista-animais .card-animal')].filter((card) => !card.hidden);
+    assert.equal(visiveis.length, 1);
+    assert.equal(visiveis[0].querySelector('h3').textContent, 'Mel');
+    visiveis[0].querySelector('.botao-detalhes').click();
+    assert.equal(visiveis[0].querySelector('.detalhes-expandidos').hidden, false);
+});
+
+test('falha no catálogo apresenta nova tentativa, sem animais fictícios', async () => {
+    const env = ambiente('index.html', async () => { throw new Error('offline'); });
+    env.executar('js/main.js');
+    await aguardar();
+    assert.equal(env.document.querySelectorAll('.lista-animais .card-animal').length, 0);
+    assert.equal(env.document.querySelector('#recarregar-catalogo').hidden, false);
+    assert.equal(env.document.querySelector('#paginacao-catalogo').hidden, true);
+});
+
+test('catalogo exibe somente 3 gatos e 3 cachorros', async () => {
+    const animais = Array.from({ length: 22 }, (_, i) => ({ id: i + 1, nome: `Animal ${i + 1}`, especie: i < 11 ? 'cao' : 'gato', sexo: 'macho', situacao: 'disponivel' }));
+    const env = ambiente('index.html', async () => ({ sucesso: true, animais }));
+    env.executar('js/main.js');
+    await aguardar();
+    const cards = [...env.document.querySelectorAll('.lista-animais .card-animal')];
+    assert.equal(cards.length, 6);
+    assert.equal(cards.filter(card => card.dataset.especie === 'cao').length, 3);
+    assert.equal(cards.filter(card => card.dataset.especie === 'gato').length, 3);
+    assert.equal(env.document.querySelector('#pagina-proxima').hidden, true);
+    env.document.querySelector('[data-tipo="especie"][data-valor="gato"]').click();
+    assert.equal(cards.filter(card => !card.hidden).length, 3);
+    env.document.querySelector('#limpar-filtros').click();
+    assert.equal(cards.filter(card => !card.hidden).length, 6);
+});
+
+test('cadastro envia booleanos e edição usa o ID do animal', async () => {
+    const chamadas = [];
+    const animal = { id: 7, nome: 'Bob', especie: 'cao', sexo: 'macho', porte: 'medio', faixa_etaria: 'adulto', situacao: 'disponivel', convivencia_criancas: true, convivencia_outros_animais: false };
+    const env = ambiente('pages/animais.html', async (caminho, opcoes) => {
+        chamadas.push({ caminho, opcoes });
+        return { sucesso: true, animais: [animal] };
+    });
+    env.executar('js/animais.js');
+    await aguardar();
+    env.document.querySelector('#lista-admin button').click();
+    const form = env.document.querySelector('#form-animal');
+    form.elements.nome.value = 'Bob atualizado';
+    form.elements.imagem_url.value = 'https://exemplo.com/bob.jpg';
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    const envio = chamadas.find((chamada) => chamada.opcoes?.method === 'PUT');
+    assert.equal(envio.caminho, '/api/animais/7');
+    const body = JSON.parse(envio.opcoes.body);
+    assert.equal(body.nome, 'Bob atualizado');
+    assert.equal(body.imagem_url, 'https://exemplo.com/bob.jpg');
+    assert.equal(body.convivencia_criancas, true);
+    assert.equal(body.convivencia_outros_animais, false);
+});
+
+test('cadastro envia imagem e edição permite removê-la', async () => {
+    const chamadas = [];
+    const animal = { id: 9, nome: 'Mel', imagem_url: 'https://exemplo.com/mel.jpg' };
+    const env = ambiente('pages/animais.html', async (caminho, opcoes) => {
+        chamadas.push({ caminho, opcoes });
+        return { animais: [animal] };
+    });
+    env.executar('js/animais.js');
+    await aguardar();
+    env.document.querySelector('#lista-admin button').click();
+    assert.equal(env.document.querySelector('#imagem_url').value, animal.imagem_url);
+    assert.equal(env.document.querySelector('#previa-imagem').hidden, false);
+    env.document.querySelector('#imagem_url').value = '';
+    const form = env.document.querySelector('#form-animal');
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    assert.equal(JSON.parse(chamadas.find((c) => c.opcoes?.method === 'PUT').opcoes.body).imagem_url, null);
+    env.document.querySelector('#novo-animal').click();
+    assert.equal(env.document.querySelector('#imagem_url').value, '');
+    assert.equal(env.document.querySelector('#previa-imagem').hidden, true);
+    form.elements.nome.value = 'Luna';
+    form.elements.imagem_url.value = 'https://exemplo.com/luna.jpg';
+    form.dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    assert.equal(JSON.parse(chamadas.find((c) => c.opcoes?.method === 'POST').opcoes.body).imagem_url, 'https://exemplo.com/luna.jpg');
+});
+
+test('adoção só oferece animais disponíveis e adotantes aprovados', async () => {
+    const env = ambiente('pages/adocoes.html', async (caminho) => {
+        if (caminho === '/api/admin/animais') return { sucesso: true, animais: [{ id: 1, nome: 'Bob', situacao: 'disponivel' }, { id: 2, nome: 'Mel', situacao: 'adotado' }] };
+        if (caminho === '/api/adotantes') return { sucesso: true, adotantes: [{ id: 1, nome: 'Pessoa aprovada', status: 'aprovado' }, { id: 2, nome: 'Pessoa em triagem', status: 'em triagem' }] };
+        return { sucesso: true, adocoes: [] };
+    });
+    env.executar('js/adocoes.js');
+    await aguardar();
+    assert.equal(env.document.querySelectorAll('#animal_id option').length, 2);
+    assert.equal(env.document.querySelectorAll('#adotante_id option').length, 2);
+    assert.equal(env.document.querySelector('#form-adocao [type=submit]').disabled, false);
+});
+
+test('registro de adoção preenche dados do interessado e seu animal disponível', async () => {
+    const env = ambiente('pages/adocoes.html', async caminho => {
+        if (caminho === '/api/admin/animais') return { animais: [{ id: 7, nome: 'Mel', situacao: 'disponivel' }] };
+        if (caminho === '/api/adotantes') return { adotantes: [{ id: 3, nome: 'Bruno', email: 'bruno@example.com', telefone: '99999999999', status: 'aprovado', interesse: { animal_id: '7', cidade: 'Balsas, MA', mensagem: 'Casa com quintal' } }] };
+        return { adocoes: [] };
+    });
+    env.executar('js/adocoes.js');
+    await aguardar();
+    const select = env.document.querySelector('#adotante_id');
+    select.value = '3';
+    select.dispatchEvent(new env.window.Event('change'));
+    assert.equal(env.document.querySelector('#dados-adotante-adocao').hidden, false);
+    assert.equal(env.document.querySelector('#adocao-nome').value, 'Bruno');
+    assert.equal(env.document.querySelector('#adocao-email').value, 'bruno@example.com');
+    assert.equal(env.document.querySelector('#adocao-cidade').value, 'Balsas');
+    assert.equal(env.document.querySelector('#adocao-estado').value, 'MA');
+    assert.equal(env.document.querySelector('#adocao-mensagem').value, 'Casa com quintal');
+    assert.equal(env.document.querySelector('#animal_id').value, '7');
+    select.value = '';
+    select.dispatchEvent(new env.window.Event('change'));
+    assert.equal(env.document.querySelector('#dados-adotante-adocao').hidden, true);
+    assert.equal(env.document.querySelector('#adocao-email').value, '');
+});
+
+test('histórico envia o registro para o animal selecionado', async () => {
+    const chamadas = [];
+    const animal = { id: 7, nome: 'Bob', situacao: 'adotado' };
+    const env = ambiente('pages/animais.html', async (caminho, opcoes) => {
+        chamadas.push({ caminho, opcoes });
+        return { sucesso: true, animais: [animal], historico: {} };
+    });
+    env.executar('js/animais.js');
+    await aguardar();
+    env.document.querySelector('[aria-label="Histórico de Bob"]').click();
+    await aguardar();
+    env.document.querySelector('#registro-data_resgate').value = '2026-10-05';
+    env.document.querySelector('#registro-local_resgate').value = 'Local de teste';
+    env.document.querySelector('#registro-motivo').value = 'Registro de teste';
+    env.document.querySelector('#form-historico').dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    const envio = chamadas.find((chamada) => chamada.opcoes?.method === 'POST');
+    assert.equal(envio.caminho, '/api/animais/7/resgates');
+    assert.equal(JSON.parse(envio.opcoes.body).local_resgate, 'Local de teste');
+    assert.equal(env.document.querySelector('#historico').hidden, false);
+});
+
+test('cadastro de interessado usa os nomes esperados pela API', async () => {
+    let envio;
+    const env = ambiente('pages/adocoes.html', async (caminho, opcoes) => {
+        if (opcoes?.method === 'POST') envio = { caminho, opcoes };
+        return { sucesso: true, animais: [], adotantes: [], adocoes: [] };
+    });
+    env.executar('js/adocoes.js');
+    await aguardar();
+    env.document.querySelector('#nome-adotante').value = 'Pessoa de teste';
+    env.document.querySelector('#email-adotante').value = 'teste@example.com';
+    env.document.querySelector('#telefone-adotante').value = '99999999999';
+    env.document.querySelector('#form-adotante').dispatchEvent(new env.window.Event('submit', { cancelable: true }));
+    await aguardar();
+    assert.equal(envio.caminho, '/api/adotantes');
+    const dados = JSON.parse(envio.opcoes.body);
+    assert.equal(dados.nome, 'Pessoa de teste');
+    assert.equal(dados.email, 'teste@example.com');
+    assert.equal(dados.telefone, '99999999999');
+});
+
+test('páginas têm IDs únicos, campos rotulados e links locais existentes', () => {
+    for (const pagina of ['index.html', ...fs.readdirSync('pages').filter((arquivo) => arquivo.endsWith('.html')).map((arquivo) => `pages/${arquivo}`)]) {
+        const { document } = parseHTML(fs.readFileSync(pagina,'utf8'));
+        const ids = [...document.querySelectorAll('[id]')].map((el) => el.id);
+        assert.equal(ids.length, new Set(ids).size, `IDs duplicados em ${pagina}`);
+        for (const campo of document.querySelectorAll('input:not([type=hidden]), select, textarea')) {
+            assert.ok(campo.id && document.querySelector(`label[for="${campo.id}"]`), `Campo sem rótulo em ${pagina}`);
+        }
+        for (const el of document.querySelectorAll('[href],script[src],img[src]')) {
+            const url = el.getAttribute('href') ?? el.getAttribute('src');
+            if (/^(https?:|mailto:|tel:|data:)/.test(url)) continue;
+            assert.notEqual(url, '#', `Link sem destino em ${pagina}`);
+            const [caminhoComConsulta, fragmento] = url.split('#');
+            const arquivo = caminhoComConsulta.split('?')[0];
+            const destino = arquivo ? path.resolve(path.dirname(pagina), arquivo) : path.resolve(pagina);
+            assert.ok(fs.existsSync(destino), `Destino inexistente ${url} em ${pagina}`);
+            if (fragmento) {
+                const docDestino = arquivo ? parseHTML(fs.readFileSync(destino, 'utf8')).document : document;
+                assert.ok(docDestino.getElementById(fragmento), `Seção inexistente ${url}`);
+            }
+        }
+    }
+});
